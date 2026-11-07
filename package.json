@@ -1,0 +1,10 @@
+{
+  "name": "everyone-trains-models",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "check": "node --check app.js && node --check content.js && node --check server.mjs"
+  }
+}
