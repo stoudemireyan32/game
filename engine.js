@@ -1,70 +1,29 @@
-/* Classic orthogonal link matching. No rendering or browser dependencies. */
-(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.LinkEngine=api;})(globalThis,function(){
-  'use strict';
-  const dirs=[[-1,0],[0,1],[1,0],[0,-1]];
-  function shuffle(items,rng=Math.random){const a=items.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-  function coord(board,index){return {r:Math.floor(index/board.cols)+1,c:index%board.cols+1};}
-  function at(board,r,c){if(r===0||c===0||r===board.rows+1||c===board.cols+1)return null;return board.cells[(r-1)*board.cols+c-1];}
-  function findPath(board,a,b){
-    const n=board.rows*board.cols;
-    if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||b<0||a>=n||b>=n||a===b||board.cells[a]===null||board.cells[a]!==board.cells[b])return null;
-    const start=coord(board,a),target=coord(board,b),width=board.cols+2;
-    const best=new Int8Array((board.rows+2)*width*4).fill(3);
-    const queue=[{...start,dir:-1,turns:0,prev:-1}];
-    for(let head=0;head<queue.length;head++){
-      const cur=queue[head];
-      for(let dir=0;dir<4;dir++){
-        const turns=cur.turns+(cur.dir===-1||cur.dir===dir?0:1);
-        if(turns>2)continue;
-        const r=cur.r+dirs[dir][0],c=cur.c+dirs[dir][1];
-        if(r<0||c<0||r>board.rows+1||c>board.cols+1)continue;
-        const isEnd=r===target.r&&c===target.c;
-        if(!isEnd&&at(board,r,c)!==null)continue;
-        const key=(r*width+c)*4+dir;
-        if(best[key]<=turns)continue;
-        best[key]=turns;
-        const node={r,c,dir,turns,prev:head};queue.push(node);
-        if(isEnd){
-          const path=[];let cursor=queue.length-1;
-          while(cursor>=0){const p=queue[cursor];path.push({r:p.r,c:p.c});cursor=p.prev;}
-          path.reverse();const corners=[path[0]];
-          for(let i=1;i<path.length-1;i++)if((path[i].r-path[i-1].r)!==(path[i+1].r-path[i].r)||(path[i].c-path[i-1].c)!==(path[i+1].c-path[i].c))corners.push(path[i]);
-          corners.push(path[path.length-1]);return corners;
-        }
-      }
-    }
-    return null;
+/* Adjacent-swap match-three engine; browser and Node share the same rules. */
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.MatchEngine=api;})(globalThis,function(){
+ 'use strict';
+ function adjacent(b,a,z){return Number.isInteger(a)&&Number.isInteger(z)&&a>=0&&z>=0&&a<b.cells.length&&z<b.cells.length&&Math.abs(Math.floor(a/b.cols)-Math.floor(z/b.cols))+Math.abs(a%b.cols-z%b.cols)===1;}
+ function scan(b){const groups=[];function line(ids,axis){let start=0;while(start<ids.length){const first=b.cells[ids[start]];if(!first){start++;continue;}let end=start+1;while(end<ids.length&&b.cells[ids[end]]?.kind===first.kind)end++;if(end-start>=3)groups.push({ids:ids.slice(start,end),kind:first.kind,axis});start=end;}}
+  for(let r=0;r<b.rows;r++)line(Array.from({length:b.cols},(_,c)=>r*b.cols+c),'row');
+  for(let c=0;c<b.cols;c++)line(Array.from({length:b.rows},(_,r)=>r*b.cols+c),'col');
+  return {groups,indices:[...new Set(groups.flatMap(g=>g.ids))]};
+ }
+ function swap(b,a,z){if(!adjacent(b,a,z))return false;[b.cells[a],b.cells[z]]=[b.cells[z],b.cells[a]];return true;}
+ function isValidSwap(b,a,z){if(!adjacent(b,a,z)||!b.cells[a]||!b.cells[z])return false;if(b.cells[a].power||b.cells[z].power)return true;swap(b,a,z);const m=scan(b);swap(b,a,z);return m.indices.includes(a)||m.indices.includes(z);}
+ function move(b){for(let a=0;a<b.cells.length;a++)for(const z of [a+1,a+b.cols])if(adjacent(b,a,z)&&isValidSwap(b,a,z))return {a,b:z};return null;}
+ function shuffled(a,rng=Math.random){const x=a.slice();for(let i=x.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[x[i],x[j]]=[x[j],x[i]];}return x;}
+ function generate(rows,cols,types,make,rng=Math.random,intro=false){if(rows<3||cols<3||rows*cols>100||types<4)throw Error('Invalid board dimensions');for(let attempt=0;attempt<500;attempt++){const cells=[];for(let i=0;i<rows*cols;i++){const r=Math.floor(i/cols),c=i%cols;const options=Array.from({length:types},(_,n)=>n).filter(n=>!(c>=2&&cells[i-1].kind===n&&cells[i-2].kind===n)&&!(r>=2&&cells[i-cols].kind===n&&cells[i-cols*2].kind===n));cells.push(make(options[Math.floor(rng()*options.length)],''));}const b={rows,cols,cells};let tutorial=null;if(intro&&rows>=4&&cols>=6){const r=Math.min(2,rows-3),c=3;for(const at of [r*cols+1,r*cols+2,r*cols+4,(r+1)*cols+c])b.cells[at].kind=0;b.cells[r*cols+c].kind=1;for(const at of [r*cols,r*cols+5,(r-1)*cols+c,(r+2)*cols+c])if(b.cells[at].kind===0)b.cells[at].kind=2;tutorial={a:(r+1)*cols+c,b:r*cols+c};}if(!scan(b).indices.length&&move(b))return {...b,tutorial};}throw Error('Could not generate a stable board');}
+ function shuffle(b,rng=Math.random){for(let n=0;n<1000;n++){const candidate={...b,cells:shuffled(b.cells,rng)};if(!scan(candidate).indices.length&&move(candidate))return candidate;}throw Error('Could not shuffle board');}
+ function plan(b,matches,preferred=null,triggered=[],targetKind=null){const clear=new Set(matches.indices),creations=new Map();triggered.forEach(i=>clear.add(i));
+  for(const g of matches.groups){if(g.ids.length<4)continue;let index=g.ids.includes(preferred)&&!b.cells[preferred]?.power?preferred:g.ids.find(i=>!b.cells[i]?.power);if(index===undefined)continue;const power=g.ids.length>=5?'color':g.axis;const old=creations.get(index);if(!old||power==='color')creations.set(index,{index,kind:g.kind,power});}
+  const crosses=matches.indices.filter(i=>matches.groups.filter(g=>g.ids.includes(i)).length>1);for(const index of crosses)if(!b.cells[index]?.power)creations.set(index,{index,kind:b.cells[index].kind,power:'bomb'});
+  const seen=new Set();for(const i of clear){const tile=b.cells[i];if(!tile?.power||seen.has(i))continue;seen.add(i);const r=Math.floor(i/b.cols),c=i%b.cols;
+   if(tile.power==='row')for(let x=0;x<b.cols;x++)clear.add(r*b.cols+x);
+   if(tile.power==='col')for(let y=0;y<b.rows;y++)clear.add(y*b.cols+c);
+   if(tile.power==='bomb')for(let y=Math.max(0,r-1);y<=Math.min(b.rows-1,r+1);y++)for(let x=Math.max(0,c-1);x<=Math.min(b.cols-1,c+1);x++)clear.add(y*b.cols+x);
+   if(tile.power==='color'){const kind=targetKind===null?tile.kind:targetKind;b.cells.forEach((t,k)=>{if(t?.kind===kind)clear.add(k);});}
   }
-  function findMove(board){
-    const groups=new Map();board.cells.forEach((t,i)=>{if(t!==null){if(!groups.has(t))groups.set(t,[]);groups.get(t).push(i);}});
-    for(const ids of groups.values())for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++){const path=findPath(board,ids[i],ids[j]);if(path)return {a:ids[i],b:ids[j],path};}
-    return null;
-  }
-  function assign(board,pairTypes,rng){
-    const mask={rows:board.rows,cols:board.cols,cells:board.cells.map(t=>t===null?null:0)},sequence=[];
-    let remaining=mask.cells.flatMap((t,i)=>t===null?[]:[i]);
-    while(remaining.length){
-      let found=null;
-      for(const a of shuffle(remaining,rng)){
-        for(const b of shuffle(remaining,rng))if(a!==b&&findPath(mask,a,b)){found=[a,b];break;}
-        if(found)break;
-      }
-      if(!found)throw new Error('Cannot build a solvable link board');
-      sequence.push(found);mask.cells[found[0]]=null;mask.cells[found[1]]=null;remaining=remaining.filter(i=>i!==found[0]&&i!==found[1]);
-    }
-    const values=shuffle(pairTypes,rng),cells=board.cells.map(()=>null);
-    sequence.forEach(([a,b],i)=>{cells[a]=values[i];cells[b]=values[i];});
-    return {rows:board.rows,cols:board.cols,cells,solution:sequence};
-  }
-  function generate(rows=6,cols=6,typeCount=6,rng=Math.random){
-    if(!Number.isInteger(rows)||!Number.isInteger(cols)||rows<1||cols<1||rows*cols%2||rows*cols>80||typeCount<1)throw new Error('Invalid link board size');
-    const pairTypes=Array.from({length:rows*cols/2},(_,i)=>i%typeCount);
-    return assign({rows,cols,cells:Array(rows*cols).fill(0)},pairTypes,rng);
-  }
-  function reshuffle(board,rng=Math.random){
-    const counts=new Map();for(const t of board.cells)if(t!==null)counts.set(t,(counts.get(t)||0)+1);
-    const types=[];for(const [type,count] of counts){if(count%2)throw new Error('Unpaired tiles');for(let i=0;i<count/2;i++)types.push(type);}
-    return assign(board,types,rng);
-  }
-  return {coord,findPath,findMove,generate,reshuffle};
+  return {clear:[...clear].filter(i=>b.cells[i]),creations:[...creations.values()],groups:matches.groups,activated:seen.size};
+ }
+ function refill(b,plan,types,make,rng=Math.random){const cells=b.cells.slice();plan.clear.forEach(i=>cells[i]=null);plan.creations.forEach(p=>cells[p.index]=make(p.kind,p.power));for(let c=0;c<b.cols;c++){const survivors=[];for(let r=b.rows-1;r>=0;r--){const t=cells[r*b.cols+c];if(t)survivors.push(t);}for(let r=b.rows-1;r>=0;r--)cells[r*b.cols+c]=survivors.length?survivors.shift():make(Math.floor(rng()*types),'');}return {...b,cells};}
+ return {adjacent,scan,swap,isValidSwap,move,generate,shuffle,plan,refill};
 });
