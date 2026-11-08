@@ -47,3 +47,9 @@ TFLOPS是速率。本游戏按玩法映射为可累加的“游戏算力进度�
 `npm run test:resources`验证四视口的两卡尺寸一致、图标可见、说明页往返和进度保留（可设置PLAY_URL）。
 
 `npm run prepare:wechat`把纯规则、8个品牌PNG、GPU/数据概念图、6段MP3及许可整理到 `dist/wechat-preparation/`，约0.45MB。需要开发测试依赖及Chromium；不是已完成移植或可上传的小游戏工程。微信版建议以Cocos Creator 2D重新做渲染和平台适配，规则/数值/音频可复用；步骤、账号配合和官方来源访问限制见 `docs/wechat-release-plan.md`。未注册、登录、配置AppID或提交微信审核。
+
+## 微信体验工程
+
+`wechat/`为原生Canvas 2D小游戏工程，已预填用户提供的AppID，可从微信开发者工具「小游戏→导入」选择该目录。首版无需Cocos或npm运行依赖。功能/操作见 `wechat/README.md`，验证边界见 `docs/qa-wechat.md`。
+
+`npm run build:wechat`从当前规则/素材重建微信资源，`npm run test:wechat`运行Chromium的微信API模拟层检查。需要开发依赖、Chromium与FFmpeg；开发者工具导入预构建工程不需要这些。当前未在真正微信工具或手机上验收，也未提交审核。
