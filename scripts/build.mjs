@@ -7,7 +7,7 @@ const css=await readFile(resolve(root,'style.css'),'utf8');
 html=html.replace('<link rel="stylesheet" href="style.css">',()=>'<style>'+css+'</style>');
 let progress=[];try{progress=(await readFile(resolve(root,'docs/progress.jsonl'),'utf8')).trim().split('\n').filter(Boolean).map(line=>JSON.parse(line));}catch(error){if(error.code!=='ENOENT')throw error;}
 let scripts='window.GAME_PROGRESS='+JSON.stringify(progress.slice(-24)).replace(/</g,'\\u003c')+';\n';
-for(const name of ['engine.js','content.js','music.js','app.js']){const js=await readFile(resolve(root,name),'utf8');if(/<\/script/i.test(js))throw new Error('Unsafe inline script closing sequence in '+name);scripts+='\n/* '+name+' */\n'+js;html=html.replace('<script src="'+name+'"></script>','');}
+for(const name of ['engine.js','economy.js','content.js','music.js','app.js']){const js=await readFile(resolve(root,name),'utf8');if(/<\/script/i.test(js))throw new Error('Unsafe inline script closing sequence in '+name);scripts+='\n/* '+name+' */\n'+js;html=html.replace('<script src="'+name+'"></script>','');}
 html=html.replace('</body>',()=>'<script>'+scripts+'</script></body>');
 if(/<script\b[^>]*\bsrc=|<link\b[^>]*rel="stylesheet"|<img\b|@import\b/.test(html))throw new Error('The playable must have no external startup assets');
 await writeFile(resolve(root,'play.html'),html);console.log('Built play.html: '+new TextEncoder().encode(html).length+' bytes; no external startup assets');

@@ -1,14 +1,15 @@
-# 全民训练大模型 · 滑动三消 v0.4
+# 全民训练大模型 · 算力无限三消 v0.5
 
-手机竖屏单界面：滑动交换相邻模型图标，三个同款横向或纵向成排即消除。四连生成行/列芯片，五连生成万能核心，交叉连生成爆炸芯片，特殊芯片交换即可发动。
+手机竖屏单界面：滑动交换相邻模型图标，三个同款横向或纵向成排即可消除。无限掉落、无关卡/步数限制；四连产生行列芯片，五连产生万能核心，交叉产生爆破芯片，交换特殊芯片发动技能。
 
-每次消除立即获得金币、能量、训练数据，伴随音效、爆点和奖励图标飞入背包。四连、五连与芯片发动可得显卡碎片，六片自动合成下一档 GPU。关卡有步数目标，后续加入冰块。无合法交换自动重排，提示和重排免费，步数耗尽可免费加步。
-
-成长操作始终在棋盘下方：资源不足显示缺口，够了直接训练或购买，无需切标签页。0.1B → 1B → 3B → 7B；训练期间继续玩，完成后自动上线虚拟 MaaS 并自动赚金币。没有登录、支付、广告或个人信息上报；训练、价格、收益均为游戏模拟。
+- 普通三消直接获得78游戏算力进度、96 MB数据；四连1.5倍，五连2倍，连锁再加成。没有金币、能量、碎片或购买。
+- 顶部始终展示累计算力、MB/GB/TB数据、下一张GPU进度。首张A100约4次普通三消，下一张H100约再10次；进度满自动装卡并有约2秒型号亮相动画，溢出保留，继续装H100组成无限集群。
+- GPU与数据满足条件自动训练并上线MaaS，数据/显卡保留；0.1B→1B→3B→7B→14B→32B→70B→128B MoE，MaaS以已服务Token显示。全程不切页面、不需要点购买或确认获卡。
+- 每次有浮动算力/数据、背包飞行、爆点/光环、连锁光束；原创128BPM玩具放克BGM、本地预生成的Nice/Great/Amazing/Unbelievable/GPU unlocked人声，分别可静音，首次触摸激活。
 
 ## 开发
 
-Node.js 20+，HTML/CSS Grid/SVG/原生 JS；运行时零依赖，没有 React、Three.js 或 Canvas 命中覆盖层。开发测试依赖 Playwright 1.62.1，锁文件已提交。
+Node20+，原生HTML/CSS Grid/SVG/JS；运行时零依赖，无React/Three.js。Playwright1.62.1仅开发测试，锁文件已提交。
 
 ```sh
 npm run dev
@@ -16,16 +17,25 @@ npm test
 npm run check
 ```
 
-默认端口3000，可设置 `PORT=3006 npm run dev`。另一个终端：`PLAY_URL=http://127.0.0.1:3006/play.html npm run test:browser`，浏览器路径可用 `CHROMIUM_PATH` 覆盖。首次安装开发测试依赖用 `npm ci`。
+默认端口3000；`PORT=3007 npm run dev`可覆盖。另一个终端运行：
 
-`npm run build` 生成单文件 `play.html` 和独立 `progress.html` 日志；静态托管无需额外游戏素材。全部品牌 SVG、样式、规则和 Web Audio 合成音乐均内嵌。首次真实操作激活声音，顶部可看到音频状态并切换，设置中可单独控制音乐/音效。
+```sh
+PLAY_URL=http://127.0.0.1:3007/play.html npm run test:browser
+PLAY_URL=http://127.0.0.1:3007/play.html npm run test:edge
+```
 
-图标为 Lobe Icons 1.102.0 的 MIT 素材，下载校验、许可和出处见 `vendor/`。商标归原品牌，图标作为三消主题不代表真实调用或合作。GPU 附官方规格来源；其训练倍率为游戏数值。
+先用`npm ci`准备开发测试依赖，浏览器可通过`CHROMIUM_PATH`指定，云环境已有`/usr/bin/chromium`。
 
-## 日志与测试边界
+`npm run build`生成自包含`play.html`（约290KB，含全部音频、SVG、样式和代码）以及独立`progress.html`。运行中不联网请求游戏素材或TTS。源码开发入口`index.html`；服务根路径直接返回打包版。
 
-`node scripts/log-progress.mjs '实际完成记录'` 将实际 UTC 与北京时间写入 `docs/progress.jsonl` / `docs/progress-log.md`。构建把最近24条嵌入游戏设置，完整记录在独立日志页。这是工作记录，不是在线状态证明。
+`engine.js`负责交换/三消/掉落，`economy.js`负责资源倍率和显卡门槛，`music.js`负责解码内置音频、消除音效及混音，`app.js`负责单界面交互与自动成长。`scripts/make-audio.py`可复现原创音轨与Flite人声，需要Python numpy及带Flite的FFmpeg；普通构建无需这些工具。音频和品牌图标来源/许可见`vendor/`。
 
-存档键 `everyone-trains-match3-v4`，旧版存档保留。禁止存档仍可玩，坏存档回退新局；重置需确认。离线收益最多2小时/每次5000金币。
+## 单位与存档
 
-验收见 `docs/qa-v4.md`。云端 Chromium 触控模拟不能替代真实 iOS/安卓听感、性能和微信兼容验收。
+TFLOPS是速率。本游戏按玩法映射为可累加的“游戏算力进度”，不表示真实已完成计算工作量；解锁门槛与实际显卡规格分别展示。容量按1024进制约定显示，不将MB直接换算为Token。NVIDIA官方规格及游戏平衡见`docs/hardware-and-balance-v5.md`。
+
+存档键`everyone-trains-match3-v5`，旧版存档保留。禁止存储仍可玩，坏存档回退新局；重置需确认。MaaS离线Token最多按2小时补计。无登录、无支付、无广告、无个人数据上报；非真实模型训练、非真实收益。
+
+`node scripts/log-progress.mjs '实际完成记录'`写入实际UTC/北京时间，构建时注入最近24条记录和独立完整日志。它是执行记录，不是后台持续运行证明。
+
+验收边界见`docs/qa-v5.md`。云端触控/音频波形不能代替真实iOS、安卓、微信设备的听感与性能验收。
