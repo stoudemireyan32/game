@@ -1,0 +1,14 @@
+node_modules/
+.DS_Store
+archive-v1/
+archive-v2/
+model-tycoon-play.html
+play.html
+progress.html
+
+archive-v3/
+
+archive-v4/
+
+guide.html
+dist/

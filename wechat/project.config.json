@@ -1,0 +1,9 @@
+{
+  "description": "全民训练大模型 · 微信小游戏体验工程",
+  "projectname": "全民训练大模型",
+  "appid": "wx0f4818a31ccc7104",
+  "compileType": "game",
+  "miniprogramRoot": "./",
+  "setting": { "urlCheck": true, "es6": true, "minified": true },
+  "packOptions": { "ignore": [{ "type": "file", "value": "README.md" }] }
+}

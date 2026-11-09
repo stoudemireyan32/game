@@ -1,0 +1,9 @@
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const vm=require('node:vm');const html=fs.readFileSync(require('node:path').join(__dirname,'../play.html'),'utf8');
+test('single-file playable needs no remote images, stylesheets, scripts or fonts',()=>{assert(!/<script\b[^>]*\bsrc=|<link\b[^>]*rel="stylesheet"|<img\b|@import\b/.test(html));assert(html.includes('全民训练大模型 · 算力无限三消'));assert(Buffer.byteLength(html)<350000);});
+test('all eight brand SVGs are bundled without scripts or external image references',()=>{const scope={window:{}};vm.runInNewContext(fs.readFileSync(require('node:path').join(__dirname,'../content.js'),'utf8'),scope);const c=scope.window.GAME_CONTENT;assert.equal(c.brands.length,8);for(const b of c.brands){assert(b.svg.includes('<svg'));assert(!/<script|<image|<foreignObject|onload=|onclick=/.test(b.svg));}assert(c.iconLicense.includes('MIT'));});
+
+test('compiled JavaScript preserves literal dollar signs and parses as one browser script',()=>{const chunks=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];assert.equal(chunks.length,1);new vm.Script(chunks[0][1]);assert(chunks[0][1].includes('$$=q=>'));});
+
+test('standalone journal has explicit head for preview base resolution and a static game link',()=>{const page=fs.readFileSync(require('node:path').join(__dirname,'../progress.html'),'utf8');assert(page.includes('<head>'));assert(page.includes('</head>'));assert(page.includes('<body>'));assert(page.includes('href="play.html"'));assert(page.includes('北京时间'));});
+
+ test('manual shares GPU and model rules and contains no startup requests',()=>{const guide=fs.readFileSync(require('node:path').join(__dirname,'../guide.html'),'utf8');assert(guide.includes('312 TFLOPS'));assert(guide.includes('1,092 TFLOPS'));assert(guide.includes('FP16 / BF16'));assert(guide.includes('href="play.html"'));assert(!/<script\b|<img\b|rel="stylesheet"/.test(guide));});
